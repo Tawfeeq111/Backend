@@ -1,6 +1,6 @@
 import mongoose, { Mongoose } from "mongoose";
 import { DB_NAME } from "./constants.js";
-import express from "express";
+import app from './app.js'
 import connectToDB from "./db/connect.js";
 import dotenv from "dotenv";
 
@@ -8,10 +8,10 @@ import dotenv from "dotenv";
 //     path: './env'
 // })
 
-const app = express()
-
 const connectDB = async () => {
     try {
+        // console.log(process.env.MONGODB_URI + '/' + DB_NAME) will not connect
+        // console.log(`${process.env.MONGODB_URI}/${DB_NAME}`)
         await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
 
         app.listen(process.env.PORT, () => {
@@ -24,6 +24,6 @@ const connectDB = async () => {
     }
 }
 
-// connectDB()
+connectDB()
 
-connectToDB();
+// connectToDB();
