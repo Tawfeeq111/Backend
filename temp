@@ -1,0 +1,35 @@
+controllers --> user.controller.js
+middlewares --> auth.middleware.js
+models --> user.model.js
+routes
+utils
+app.js
+index.js
+
+////////////////////////
+import express from 'express'
+import cookieParser from 'cookie-parser'
+import cors from 'cors'
+const app = express()
+
+app.use(cors())
+
+app.use(express.json())
+app.use(express.static('public'))
+app.use(express.urlencoded())
+app.use(cookieParser())
+
+import userRouter from './routes/user.routes.js'
+
+app.use('/api/v1/users', userRouter);
+
+export default app
+////////////////////////
+
+
+import { Router } from 'express'
+
+const router = Router()
+
+router.route('/register').post(middleware1, middleware2, ...., registerUser)
+

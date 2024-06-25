@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js"
-import uploadOnCoudinary from "../utils/cloudinary.js";
+import uploadOnCoudinary from "../utils/cloudinary.js"
+import jwt from "jsonwebtoken"
 
 const generateTokens = async (userId) => {
     try {
@@ -98,11 +99,13 @@ const LogInUser = async (req, res) => {
             res.status(400).json({
                 error: "username or email is required"
             })
+            return;
         }
         if(!password){
             res.status(400).json({
                 error: "password is required"
             })
+            return;
         }
 
         const user = await User.findOne({
@@ -113,6 +116,7 @@ const LogInUser = async (req, res) => {
             res.status(400).json({
                 error: "user not found"
             })
+            return;
         }
     
         const isPasswordValid = user.isPasswordCorrect(password)
@@ -121,6 +125,7 @@ const LogInUser = async (req, res) => {
             res.status(400).json({
                 error: "password is incorrect"
             })
+            return;
         }
 
         const {accessToken, refreshToken} = await generateTokens(user._id)
@@ -175,4 +180,58 @@ const LogOutUser = async (req, res) => {
     }
 }
 
-export { RegisterUser, LogInUser, LogOutUser }
+const RefreshAccessToken = async (req, res) => {
+    try {
+        const refreshToken = req.cookies?.RefreshToken || req.header("Authorization")?.replace("Bearer ", "") || ""
+        if(!refreshToken){
+            res.status(400).json({
+                error: "Unauthorized request"
+            })
+            return;
+        }
+
+        const decodedToken = jwt.verify(refreshToken, process.env.REFEREASH_TOKEN_SECREAT)
+        const user = await User.findById(decodedToken?._id)
+        
+        if(!user){
+            res.status(400).json({
+                error: "Invalid token"
+            })
+            return;
+        }
+
+        if(refreshToken !== user.refreashToken){
+            res.status(400).json({
+                error: "Refresh Token is expired or used"
+            })
+            return;
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+        const newAccessToken = await user.generateAccessToken()
+        const newRefreshToken = await user.generateRefreashToken()
+        user.refreashToken = newRefreshToken
+        user.save({ validateBeforeSave: false })
+
+        res.status(200)
+        .cookie("AccessToken", newAccessToken, options)
+        .cookie("RefreshToken", newRefreshToken, options)
+        .json({
+            message: "Access and Refresh tokens are refreshed"
+        })
+
+    } catch (error) {
+        console.log("Error in RefreshAccessToken controller ", error)
+        res.status(500).json({
+            error: "Error in RefreshAccessToken controller"
+        })
+
+    }
+}
+
+
+
+export { RegisterUser, LogInUser, LogOutUser, RefreshAccessToken }
